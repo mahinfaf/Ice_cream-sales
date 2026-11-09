@@ -12,7 +12,7 @@ st.write("Predict daily ice cream sales revenue based on outdoor temperature and
 # ---------------------------------------------------------
 @st.cache_resource
 def load_model():
-    with open("model.pkl", "rb") as f:
+    with open("model_pkl.py", "rb") as f:
         return pickle.load(f)
 
 try:
