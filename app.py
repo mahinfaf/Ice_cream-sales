@@ -1,6 +1,7 @@
 import streamlit as st
-import pickle
+import pandas as pd
 import numpy as np
+from sklearn.linear_model import LinearRegression
 
 st.set_page_config(page_title="Ice Cream Sales Predictor", layout="centered")
 
@@ -8,21 +9,43 @@ st.title("🍦 Ice Cream Sales Predictor")
 st.write("Predict daily ice cream sales revenue based on outdoor temperature and day type.")
 
 # ---------------------------------------------------------
-# Load Trained Model
+# Step 1: Create Dataset & Train Model Automatically in Code
 # ---------------------------------------------------------
 @st.cache_resource
-def load_model():
-    with open("model_pkl.py", "rb") as f:
-        return pickle.load(f)
+def train_model():
+    """Generates training data and trains the linear regression model directly in Python."""
+    np.random.seed(42)
+    n_samples = 150
 
-try:
-    model = load_model()
-except Exception as e:
-    st.error(f"Error loading model file: {e}")
-    st.stop()
+    # Feature 1: Temperature in Celsius (15°C to 35°C)
+    temperature = np.random.uniform(15, 35, n_samples)
+    
+    # Feature 2: Weekend / Holiday status (0 = Weekday, 1 = Weekend/Holiday)
+    weekend = np.random.choice([0, 1], size=n_samples, p=[0.7, 0.3])
+    
+    # Target: Sales revenue ($) calculated with temperature and weekend effects + noise
+    sales = 50 + (temperature * 12.5) + (weekend * 85.0) + np.random.normal(0, 15, n_samples)
+
+    df = pd.DataFrame({
+        'temperature': temperature,
+        'weekend': weekend,
+        'sales': sales
+    })
+
+    # Fit Multiple Linear Regression Model
+    X = df[['temperature', 'weekend']]
+    y = df['sales']
+    
+    model = LinearRegression()
+    model.fit(X, y)
+    
+    return model
+
+# Train or retrieve cached model
+model = train_model()
 
 # ---------------------------------------------------------
-# User Inputs
+# Step 2: User Inputs
 # ---------------------------------------------------------
 st.header("1. Enter Daily Conditions")
 
@@ -43,23 +66,22 @@ with col2:
         options=["No (Weekday)", "Yes (Weekend/Holiday)"]
     )
 
-# Convert categorical selectbox to binary feature
+# Convert selection to binary numeric indicator (0 or 1)
 weekend_numeric = 1 if is_weekend == "Yes (Weekend/Holiday)" else 0
 
 # ---------------------------------------------------------
-# Prediction Logic
+# Step 3: Run Prediction
 # ---------------------------------------------------------
-st.header("2. Revenue Prediction")
+st.header("2. Sales Prediction")
 
 if st.button("Predict Daily Sales"):
-    # Format inputs into 2D array matching training features: [[temperature, weekend]]
+    # Format inputs into array matching training shape: [[temperature, weekend]]
     input_data = np.array([[temp_input, weekend_numeric]])
     prediction = model.predict(input_data)[0]
     
     st.success(f"Estimated Daily Sales Revenue: **${prediction:.2f}**")
 
-# Context message
 st.markdown("---")
 st.caption(
-    "Note: This model uses multiple linear regression based on historical temperature and day-of-week data."
+    "Note: The linear regression model is dynamically trained in-memory using temperature and weekend indicators as predictors."
 )
